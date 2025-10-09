@@ -1,3 +1,10 @@
 .vscode/
 *.code-workspace
 .pio/
+vision-from-scratch/image_eg/camb.jpg
+vision-from-scratch/image_eg/chess.png
+vision-from-scratch/image_eg/dot.jpg
+vision-from-scratch/image_eg/images.jpeg
+vision-from-scratch/image_eg/images.jpg
+vision-from-scratch/image_eg/images.png
+vision-from-scratch/image_eg/vwv.jpg

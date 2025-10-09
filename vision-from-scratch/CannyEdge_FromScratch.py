@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 
 #thresholds parameters (to adapt depending on the image)
-t_max = 50 #treshold max
-t_min= 10 #treshold min 
+t_max = 20 #treshold max
+t_min= 0.4*t_max #treshold min (40% of t_max)
 
 s_x= 1 #sigma for x
 s_y= s_x #sigma for y
@@ -11,13 +11,13 @@ s_y= s_x #sigma for y
 # Size of the kernel. Without limiting the size, the kernel would consider all pixels in the line, adding a lot of unnecessary computation.
 size = int(6*s_x+1)  #After size = 6*sigma + 1, contributions from further pixels are negligible.
 
-cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
 
-ret, frame = cap.read()
-image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#ret, frame = cap.read()
+#image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 width = size//2 #to center the kernel around 0
 
-#image = cv2.imread("---PICTURE'S PATH", cv2.IMREAD_GRAYSCALE) #load image in grayscale
+image = cv2.imread("--PICTURE'S PATH--", cv2.IMREAD_GRAYSCALE) #load image in grayscale
 
 h, w = image.shape #height and width of the image adaptative to any image size
 
@@ -90,10 +90,9 @@ for g in range(1, h-1): # Éviter les bords pour les vérifications de voisinage
 
 sob = Gxy #update sob with the final result after hysteresis
 
-# Normalisation pour l'affichage
-sob_display = cv2.normalize(sob, None, 0, 255, cv2.NORM_MINMAX)
 
-cv2.imshow("i6", sob_display.astype(np.uint8)) #display the final result
+
+cv2.imshow("i6", sob.astype(np.uint8)) #display the final result
 
 #kernel x (g_s(x)) for the columns
 kernel = np.zeros(size, dtype=np.float32) #kernel's initialization x
@@ -121,7 +120,7 @@ for l in range(w):
     GxyI[:,l] = np.convolve(GxI[:,l], kernel, mode="same") #[:,l] means we take the l-th column of GxI
 
 #We now filled GxyI with the smoothed image pixel's values on x and y
-
+cv2.imshow("i3", GxyI.astype(np.uint8))
 dGx = np.zeros_like(image, dtype=np.float32) #initialization of the gradient on x
 dGy = np.zeros_like(image, dtype=np.float32) #initialization of the gradient on y
 n_Gxy = np.zeros_like(image, dtype=np.float32) #initialization of the norm of the gradient
@@ -133,8 +132,8 @@ for m in range(1, h-1): #avoid the borders
         dGy[m,n] = (GxyI[m,n+1] - GxyI[m,n-1])/2 #derivative on y (central difference)
         n_Gxy[m,n] = np.sqrt(dGx[m,n]**2+dGy[m,n]**2) #norm of the gradient
 
-n_Gxy_display = cv2.normalize(n_Gxy, None, 0, 255, cv2.NORM_MINMAX) #normalization for display purpose (8-bit image)
-cv2.imshow("i8", n_Gxy_display.astype(np.uint8))
+n_Gxy_display = n_Gxy 
+
 #non-maximum suppression
 for u in range(1, h-1): #avoid the borders 
     for v in range(1, w-1):

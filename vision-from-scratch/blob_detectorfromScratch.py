@@ -5,7 +5,7 @@ image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-visi
 
 h, w = image.shape
 
-s = 1
+s = 20
 size = 6*s+1
 width = size//2
 
@@ -40,6 +40,8 @@ for j in range(1, w-1):
  #Combinaison
 S_n_1D = (S_x + S_y)
 
+
+
 # Visualisation : normalisation pour affichage
 S_n_1D = (S_n_1D - np.min(S_n_1D)) / (np.max(S_n_1D) - np.min(S_n_1D))*255
 S_n = (S_n - np.min(S_n)) / (np.max(S_n) - np.min(S_n))*255
@@ -48,12 +50,19 @@ cv2.imshow("LoG1D", (S_n_1D).astype(np.uint8))
 
 
 S_n[S_n>200] = 255
-S_n[S_n<200] = 0
-
-S_n_1D[S_n_1D>200 & S_n_1D<10] = 255
-S_n_1D[S_n_1D<200 & S_n_1D] = 0
+S_n[S_n<55] = 255 
+S_n[(S_n >= 55) & (S_n <= 200)] = 0
 
 
+
+
+S_n_1D[S_n_1D>200] = 255
+S_n_1D[S_n_1D<55] = 255 
+S_n_1D[(S_n_1D >= 55) & (S_n_1D <= 200)] = 0
+
+
+# for i in range(len(S_n_1D)):
+#     S_n_1D[i] = [255 if(x>200 and x<10)  else 0 if(x<200 and x>10) else x for x in S_n_1D[i]]
 
 cv2.imshow("LoG", (S_n).astype(np.uint8))
 cv2.imshow("LoG_1D", (S_n_1D).astype(np.uint8))

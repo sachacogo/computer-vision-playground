@@ -5,7 +5,14 @@ image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-visi
 
 h, w = image.shape
 
-s = 20
+t = 1
+
+h = h//t
+w = w//t
+
+image = cv2.resize(image, (w, h))
+
+s = 6
 size = 6*s+1
 width = size//2
 
@@ -20,7 +27,9 @@ for i in range(size):
         kernel = np.exp(-(x**2+y**2)/(2*s**2))/(2*np.pi*s**2) 
         kernel_2nd[i,j] = ((x**2+y**2) - 2*s**2) / (s**4) * kernel
 
-S_n = cv2.filter2D(image, cv2.CV_32F, kernel_2nd)        
+S_n = cv2.filter2D(image, cv2.CV_32F, kernel_2nd)   
+      
+
 
 for i in range(size):
     x = i-width

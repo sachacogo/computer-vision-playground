@@ -5,7 +5,7 @@ image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-visi
 
 h, w = image.shape
 
-s = 7
+s = 1
 size = 6*s+1
 width = size//2
 
@@ -50,8 +50,10 @@ cv2.imshow("LoG1D", (S_n_1D).astype(np.uint8))
 S_n[S_n>200] = 255
 S_n[S_n<200] = 0
 
-S_n_1D[S_n_1D>200] = 255
-S_n_1D[S_n_1D<200] = 0
+S_n_1D[S_n_1D>200 & S_n_1D<10] = 255
+S_n_1D[S_n_1D<200 & S_n_1D] = 0
+
+
 
 cv2.imshow("LoG", (S_n).astype(np.uint8))
 cv2.imshow("LoG_1D", (S_n_1D).astype(np.uint8))
@@ -59,3 +61,5 @@ cv2.imshow("LoG_1D", (S_n_1D).astype(np.uint8))
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+

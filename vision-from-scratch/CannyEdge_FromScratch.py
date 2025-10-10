@@ -167,7 +167,7 @@ for a in range(h):
 Gxy = n_Gxy_display.copy() #creating a copy to avoid updating a weak edge to a strong edge and then using this new value to update another weak edge next to it
 for g in range(h):
     for t in range(w):
-        if (n_Gxy_display[g,t] == 128) and (n_Gxy_display[g+1,t+1] == 255 or n_Gxy_display[g,t+1] == 255 or n_Gxy_display[g-1,t+1] == 255 or n_Gxy_display[g-1,t] == 255 or n_Gxy_display[g-1,t-1] == 255 or n_Gxy_display[g,t-1] == 255 or n_Gxy_display[g+1,t-1] == 255 or n_Gxy_display[g+1,t] == 255): #if a weak edge has at least one strong edge in its 8-neighborhood
+        if (n_Gxy_display[g,t] == 128) & (n_Gxy_display[g+1,t+1] == 255 | n_Gxy_display[g,t+1] == 255 | n_Gxy_display[g-1,t+1] == 255 | n_Gxy_display[g-1,t] == 255| n_Gxy_display[g-1,t-1] == 255 | n_Gxy_display[g,t-1] == 255 | n_Gxy_display[g+1,t-1] == 255 | n_Gxy_display[g+1,t] == 255): #if a weak edge has at least one strong edge in its 8-neighborhood
             Gxy[g,t] = 255 #update the weak edge to a strong edge
         else: #if not, suppress the weak edge
             Gxy[g,t] = 0

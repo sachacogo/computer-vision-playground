@@ -1,9 +1,26 @@
 import cv2
 import numpy as np
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\camb.jpg", cv2.IMREAD_GRAYSCALE)
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\taj.png", cv2.IMREAD_GRAYSCALE)
 
 h, w = image.shape
+
+def NMS(D):
+    #[s,x,y]
+# D = np.array(D)
+    D_c = np.zeros_like(D)
+
+
+    for b in range(1, h-1):
+            for c in range(1, w-1):
+                patch = D[b-1:b+2,c-1:c+2]
+                if np.abs(D[b,c]) == np.max(np.abs(patch)):
+                    D_c[b,c] = 255
+                else:
+                    D_c[b,c] = 0   
+   
+    D = D_c                
+    return D   
 
 t = 1
 
@@ -19,7 +36,7 @@ def impair(size):
 # image = cv2.resize(image, (w, h))
 # my intuitive way of subsampling theoricaly work but add more complexity (calculate the average pixel value with his surroundings for each pixel) but has less risk of losing patern (aliasing)
 
-s = 1.5
+s = 3
 size = int(6*s+1)
 size = impair(size)
 width = size//2
@@ -64,11 +81,11 @@ S_n = (S_n - np.min(S_n)) / (np.max(S_n) - np.min(S_n))*255
 cv2.imshow("LoG1", (S_n).astype(np.uint8))
 # cv2.imshow("LoG1D", (S_n_1D).astype(np.uint8))
 
-S_n[S_n>200] = 255
-S_n[S_n<55] = 255 
-S_n[(S_n >= 55) & (S_n <= 200)] = 0
+# S_n[S_n>200] = 255
+# S_n[S_n<55] = 255 
+# S_n[(S_n >= 55) & (S_n <= 200)] = 0
 
-
+S_n = NMS(S_n)
 
 
 # S_n_1D[S_n_1D>200] = 255
@@ -78,6 +95,7 @@ S_n[(S_n >= 55) & (S_n <= 200)] = 0
 
 # for i in range(len(S_n_1D)):
 #     S_n_1D[i] = [255 if(x>200 and x<10)  else 0 if(x<200 and x>10) else x for x in S_n_1D[i]]
+
 
 cv2.imshow("LoG", (S_n).astype(np.uint8))
 # cv2.imshow("LoG_1D", (S_n_1D).astype(np.uint8))

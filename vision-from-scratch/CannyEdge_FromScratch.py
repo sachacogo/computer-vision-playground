@@ -17,7 +17,7 @@ size = int(6*s_x+1)  #After size = 6*sigma + 1, contributions from further pixel
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 width = size//2 #to center the kernel around 0
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\camb.jpg", cv2.IMREAD_GRAYSCALE) #load image in grayscale
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebre.jpg", cv2.IMREAD_GRAYSCALE) #load image in grayscale
 
 h, w = image.shape #height and width of the image adaptative to any image size
 

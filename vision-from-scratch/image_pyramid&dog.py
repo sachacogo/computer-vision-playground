@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\vwv.jpg", cv2.IMREAD_GRAYSCALE)
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebre.jpg", cv2.IMREAD_GRAYSCALE)
 t = 1
-h,w = image.shape
+
+t_min = 100
+t_max = 200
 
 def impair(size):
         if(size % 2 == 0): 
@@ -14,6 +16,7 @@ def impair(size):
        
         
 def smooth(image, kernel): 
+
     Sx = np.zeros_like(image, dtype=np.float32)
     for k in range(h): 
         Sx[k,:] =  np.convolve(image[k,:], kernel, mode ="same")  
@@ -26,20 +29,38 @@ def smooth(image, kernel):
 def NMS(D):
     #[s,x,y]
     D = np.array(D)
+    s,h,w = D.shape
+    D_c = np.zeros_like(D)
+
     for a in range(1, s-1):
         for b in range(1, h-1):
             for c in range(1, w-1):
                 patch = D[a-1:a+2,b-1:b+2,c-1:c+2]
-                if D[a,b,c] == np.max(np.abs(patch)):
-                    D[a,b,c] = 255
+                if np.abs(D[a,b,c]) == np.max(np.abs(patch)):
+                    D_c[a,b,c] = D[a,b,c]
                 else:
-                    D[a,b,c] = 0    
+                    D_c[a,b,c] = 0      
+    D = D_c                
     return D            
 
 
-sigma_0 = 1.6
-s = 5
+sigma_0 = 1
+s = 6
 lvl = 2
+
+
+def KernGauss(size, n, sigma):
+
+    kernel = np.zeros(size, dtype = np.float32)
+
+    for j in range(size):
+        x = j-n
+        kernel[j] = np.exp(-(x**2)/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2)
+
+    kernel /= kernel.sum()     
+    return kernel    
+
+sigma = sigma_0
 
 PYRAMID = []
 DoG = []
@@ -50,45 +71,124 @@ for k in range(lvl):
     h, w = image.shape
 
     for i in range(s):
-
-        sigma = 2**(i/s)*sigma_0
-
+        # sigma = 2**(i/s)*sigma_0
         size = int(sigma*6+1)
         size = impair(size)
         n = size//2
-        kernel = np.zeros(size, dtype = np.float32)
-    
-        for j in range(size):
-            x = j-n
-            kernel[j] = np.exp(-(x**2)/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2)
-            
-        kernel /= kernel.sum() 
 
- 
-        image_smoothed = smooth(image, kernel)
+        sigma_opti = sigma*np.sqrt(2**(2/s)-1)
+
+        size_opti = int(sigma_opti*6+1)
+        size_opti = impair(size_opti)
+        n_opti = size_opti//2
 
 
-        PYRAMID.append(image_smoothed)
+        KerGaus = KernGauss(size, n, sigma)
+
+        if k == i ==0: 
+            KerGaus = KernGauss(size, n, sigma)
+        else:
+            KerGaus = KernGauss(size_opti, n_opti, sigma_opti)
+
+        sigma = np.sqrt(sigma**2 + sigma_opti**2)
+        
+        image = smooth(image, KerGaus)
+        PYRAMID.append(image)
+        
+
 
         if(i >= 1):
             DoG_k.append(PYRAMID[-1] - PYRAMID[-2])
-            DoG_k[-1] = cv2.normalize(DoG_k[-1], None, 0, 255, cv2.NORM_MINMAX)
+
         else:
             continue  
 
 
-  
+   
     t = t*2
-    DoG_k = NMS(DoG_k)
-    DoG.append(DoG_k)
 
+
+    DoG_k = NMS(DoG_k)
+
+    X = np.argwhere(DoG_k != 0)
+
+    for a,b,c in X:
+        sigma_s,h_s,w_s = DoG_k.shape 
+        if 1<=a<sigma_s-1 and 1<= b < h_s-1 and 1<= c < w_s-1 :
+            Dss = DoG_k[a+1,b,c] - 2*DoG_k[a,b,c] + DoG_k[a-1,b,c]
+            Dxx = DoG_k[a,b+1,c] - 2*DoG_k[a,b,c] + DoG_k[a,b-1,c]
+            Dyy = DoG_k[a,b,c+1] - 2*DoG_k[a,b,c] + DoG_k[a,b,c-1]
+            Dsx = (DoG_k[a+1,b+1,c] - DoG_k[a+1,b-1,c] - DoG_k[a-1,b+1,c] + DoG_k[a-1,b-1,c]) / 4
+            Dsy = (DoG_k[a+1,b,c+1] - DoG_k[a+1,b,c-1] - DoG_k[a-1,b,c+1] + DoG_k[a-1,b,c-1]) / 4
+            Dxy = (DoG_k[a,b+1,c+1] - DoG_k[a,b+1,c-1] - DoG_k[a,b-1,c+1] + DoG_k[a,b-1,c-1]) / 4
+
+            H = np.array([
+                [Dss, Dsx, Dsy],
+                [Dsx, Dxx, Dxy],
+                [Dsy, Dxy, Dyy]
+            ], dtype=np.float32)
+
+
+
+            grad = np.array([
+            (DoG_k[a+1,b,c] - DoG_k[a-1,b,c]) / 2,  
+            (DoG_k[a,b+1,c] - DoG_k[a,b-1,c]) / 2,  
+            (DoG_k[a,b,c+1] - DoG_k[a,b,c-1]) / 2  
+                ]       , dtype=np.float32)
+            
+            if np.max(np.abs(H)) > 1e-6: 
+
+                dX = np.linalg.solve(H, -grad) 
+
+                DoG_k[a,b,c] = DoG_k[a,b,c] + 1/2*np.dot(dX, grad)
+
+                
+                if np.abs(DoG_k[a,b,c]) > 0.03 * np.max(np.abs(DoG_k)):
+                    DoG_k[a,b,c] = 255
+                else:
+                    DoG_k[a,b,c] = 0
+
+                H_2D = np.array([[Dxx, Dxy],
+                                 [Dxy, Dyy]])
+                
+                edgesupress = (np.trace(H_2D))**2/np.linalg.det(H_2D)
+                if edgesupress > 12.1:
+                    DoG_k[a,b,c] = 0
+
+                else: continue 
+
+
+
+            else:    
+                continue
+
+
+
+        else:
+            DoG_k[a,b,c] = 0
+
+    
+
+
+    
+    DoG.append(DoG_k)
+    
+# for i in range(lvl):
+#     for j in range(1,s-2):
+#         cv2.imshow(f"{i}{j}", DoG[i][j])    
+
+DoG_f = []
 
 for i in range(lvl):
-    for j in range(s-1):
-        cv2.imshow(f"{i},{j}", DoG[i][j].astype(np.uint8))
+    tot = DoG[i][0]
+    for j in range(1, s-1):
 
-        
+        tot += DoG[i][j]
 
+    DoG_f.append(tot)
+
+for i in range(lvl):
+    cv2.imshow(f"Octave {i+1}", DoG_f[i].astype(np.uint8))
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

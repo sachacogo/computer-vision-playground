@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 #thresholds parameters (to adapt depending on the image)
-t_max = 20 #treshold max
+t_max = 0.05 #treshold max
 t_min= 0.4*t_max #treshold min (40% of t_max)
 
 s_x= 1 #sigma for x
@@ -17,7 +17,7 @@ size = int(6*s_x+1)  #After size = 6*sigma + 1, contributions from further pixel
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 width = size//2 #to center the kernel around 0
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebre.jpg", cv2.IMREAD_GRAYSCALE) #load image in grayscale
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\chess.png", cv2.IMREAD_GRAYSCALE) #load image in grayscale
 
 h, w = image.shape #height and width of the image adaptative to any image size
 
@@ -67,9 +67,9 @@ for u in range(1, h-1): #avoid the borders
 # Thresholding avec hysteresis (comme Canny)
 for a in range(h): 
     for b in range(w):
-        if (sob[a,b] > t_max): #strong edge
+        if (np.abs(sob[a,b]) > t_max*np.max(np.abs(sob))): #strong edge
             sob[a,b] = 255
-        elif (sob[a,b] < t_max) and (sob[a,b] > t_min): #weak edge
+        elif (np.abs(sob[a,b]) < t_max*np.max(np.abs(sob))) and (np.abs(sob[a,b]) > t_min*np.max(np.abs(sob))): #weak edge
             sob[a,b] = 128
         else: #not an edge
             sob[a,b] = 0
@@ -92,7 +92,7 @@ sob = Gxy #update sob with the final result after hysteresis
 
 
 
-cv2.imshow("i6", sob.astype(np.uint8)) #display the final result
+cv2.imshow("sob", sob.astype(np.uint8)) #display the final result
 
 #kernel x (g_s(x)) for the columns
 kernel = np.zeros(size, dtype=np.float32) #kernel's initialization x
@@ -120,7 +120,8 @@ for l in range(w):
     GxyI[:,l] = np.convolve(GxI[:,l], kernel, mode="same") #[:,l] means we take the l-th column of GxI
 
 #We now filled GxyI with the smoothed image pixel's values on x and y
-cv2.imshow("i3", GxyI.astype(np.uint8))
+cv2.imshow("smoothed", GxyI.astype(np.uint8))
+
 dGx = np.zeros_like(image, dtype=np.float32) #initialization of the gradient on x
 dGy = np.zeros_like(image, dtype=np.float32) #initialization of the gradient on y
 n_Gxy = np.zeros_like(image, dtype=np.float32) #initialization of the norm of the gradient
@@ -130,8 +131,8 @@ for m in range(1, h-1): #avoid the borders
     for n in range(1, w-1):
         dGx[m,n] = (GxyI[m+1,n] - GxyI[m-1,n])/2 #derivative on x (central difference)
         dGy[m,n] = (GxyI[m,n+1] - GxyI[m,n-1])/2 #derivative on y (central difference)
-        n_Gxy[m,n] = np.sqrt(dGx[m,n]**2+dGy[m,n]**2) #norm of the gradient
 
+n_Gxy = np.sqrt(dGx**2+dGy**2) #norm of the gradient
 n_Gxy_display = n_Gxy 
 
 #non-maximum suppression
@@ -156,17 +157,17 @@ for u in range(1, h-1): #avoid the borders
 #thresholding 
 for a in range(h): 
     for b in range(w):
-        if (n_Gxy_display[a,b] > t_max): #strong edge
+        if (np.abs(n_Gxy_display[a,b]) > t_max*np.max(np.abs(n_Gxy_display))): #strong edge
             n_Gxy_display[a,b]=255
-        elif (n_Gxy_display[a,b] < t_max) and (n_Gxy_display[a,b] > t_min): #weak edge
+        elif (n_Gxy_display[a,b] < t_max*np.max(np.abs(n_Gxy_display))) and (n_Gxy_display[a,b] > t_min*np.max(np.abs(n_Gxy_display))): #weak edge
             n_Gxy_display[a,b]=128
         else: #not an edge
             n_Gxy_display[a,b]=0
 
 
 Gxy = n_Gxy_display.copy() #creating a copy to avoid updating a weak edge to a strong edge and then using this new value to update another weak edge next to it
-for g in range(h):
-    for t in range(w):
+for g in range(1, h-1):
+    for t in range(1, w-1):
         if (n_Gxy_display[g,t] == 128) and (n_Gxy_display[g+1,t+1] == 255 or n_Gxy_display[g,t+1] == 255 or n_Gxy_display[g-1,t+1] == 255 or n_Gxy_display[g-1,t] == 255 or n_Gxy_display[g-1,t-1] == 255 or n_Gxy_display[g,t-1] == 255 or n_Gxy_display[g+1,t-1] == 255 or n_Gxy_display[g+1,t] == 255): #if a weak edge has at least one strong edge in its 8-neighborhood
             Gxy[g,t] = 255 #update the weak edge to a strong edge
         else: #if not, suppress the weak edge

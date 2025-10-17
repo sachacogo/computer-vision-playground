@@ -4,9 +4,6 @@ import numpy as np
 image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebre.jpg", cv2.IMREAD_GRAYSCALE)
 t = 1
 
-t_min = 100
-t_max = 200
-
 def impair(size):
         if(size % 2 == 0): 
             return size +1
@@ -39,13 +36,14 @@ def NMS(D):
                 if np.abs(D[a,b,c]) == np.max(np.abs(patch)):
                     D_c[a,b,c] = D[a,b,c]
                 else:
-                    D_c[a,b,c] = 0      
+                    D_c[a,b,c] = 0    
+                  
     D = D_c                
     return D            
 
 
 sigma_0 = 1
-s = 6
+s = 5
 lvl = 2
 
 
@@ -67,6 +65,7 @@ DoG = []
 
 for k in range(lvl):
     DoG_k = []
+    DoG_k_n = []
     image = image[::t,::t]
     h, w = image.shape
 
@@ -83,15 +82,16 @@ for k in range(lvl):
         n_opti = size_opti//2
 
 
-        KerGaus = KernGauss(size, n, sigma)
+        # KerGaus = KernGauss(size, n, sigma)
 
-        if k == i ==0: 
+        if k == i == 0: 
             KerGaus = KernGauss(size, n, sigma)
         else:
             KerGaus = KernGauss(size_opti, n_opti, sigma_opti)
 
+
         sigma = np.sqrt(sigma**2 + sigma_opti**2)
-        
+
         image = smooth(image, KerGaus)
         PYRAMID.append(image)
         
@@ -99,28 +99,38 @@ for k in range(lvl):
 
         if(i >= 1):
             DoG_k.append(PYRAMID[-1] - PYRAMID[-2])
+            # DoG_k_n = cv2.normalize(DoG_k[i-1], None, 0, 255, cv2.NORM_MINMAX)
+            # cv2.imshow("a", DoG_k_n.astype(np.uint8))    
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
         else:
             continue  
 
-
-   
     t = t*2
 
+    DoG_ka = np.array(DoG_k)
+    DoG_k_NMS_o = NMS(DoG_k)
 
-    DoG_k = NMS(DoG_k)
+    X = np.argwhere(DoG_k_NMS_o != 0)
+    DoG_k_NMS = DoG_k_NMS_o.copy()
 
-    X = np.argwhere(DoG_k != 0)
+    # for d in range(1, s-2):
+    #     cv2.imshow(f"{d}", DoG_k_NMS_o[d])
+    #     cv2.waitKey(0)
+    #     cv2.destroyAllWindows()
 
+    
     for a,b,c in X:
-        sigma_s,h_s,w_s = DoG_k.shape 
+
+        sigma_s,h_s,w_s = DoG_ka.shape 
         if 1<=a<sigma_s-1 and 1<= b < h_s-1 and 1<= c < w_s-1 :
-            Dss = DoG_k[a+1,b,c] - 2*DoG_k[a,b,c] + DoG_k[a-1,b,c]
-            Dxx = DoG_k[a,b+1,c] - 2*DoG_k[a,b,c] + DoG_k[a,b-1,c]
-            Dyy = DoG_k[a,b,c+1] - 2*DoG_k[a,b,c] + DoG_k[a,b,c-1]
-            Dsx = (DoG_k[a+1,b+1,c] - DoG_k[a+1,b-1,c] - DoG_k[a-1,b+1,c] + DoG_k[a-1,b-1,c]) / 4
-            Dsy = (DoG_k[a+1,b,c+1] - DoG_k[a+1,b,c-1] - DoG_k[a-1,b,c+1] + DoG_k[a-1,b,c-1]) / 4
-            Dxy = (DoG_k[a,b+1,c+1] - DoG_k[a,b+1,c-1] - DoG_k[a,b-1,c+1] + DoG_k[a,b-1,c-1]) / 4
+            Dss = DoG_ka[a+1,b,c] - 2*DoG_ka[a,b,c] + DoG_ka[a-1,b,c]
+            Dxx = DoG_ka[a,b+1,c] - 2*DoG_ka[a,b,c] + DoG_ka[a,b-1,c]
+            Dyy = DoG_ka[a,b,c+1] - 2*DoG_ka[a,b,c] + DoG_ka[a,b,c-1]
+            Dsx = (DoG_ka[a+1,b+1,c] - DoG_ka[a+1,b-1,c] - DoG_ka[a-1,b+1,c] + DoG_ka[a-1,b-1,c]) / 4
+            Dsy = (DoG_ka[a+1,b,c+1] - DoG_ka[a+1,b,c-1] - DoG_ka[a-1,b,c+1] + DoG_ka[a-1,b,c-1]) / 4
+            Dxy = (DoG_ka[a,b+1,c+1] - DoG_ka[a,b+1,c-1] - DoG_ka[a,b-1,c+1] + DoG_ka[a,b-1,c-1]) / 4
 
             H = np.array([
                 [Dss, Dsx, Dsy],
@@ -131,29 +141,34 @@ for k in range(lvl):
 
 
             grad = np.array([
-            (DoG_k[a+1,b,c] - DoG_k[a-1,b,c]) / 2,  
-            (DoG_k[a,b+1,c] - DoG_k[a,b-1,c]) / 2,  
-            (DoG_k[a,b,c+1] - DoG_k[a,b,c-1]) / 2  
+            (DoG_ka[a+1,b,c] - DoG_ka[a-1,b,c]) / 2,  
+            (DoG_ka[a,b+1,c] - DoG_ka[a,b-1,c]) / 2,  
+            (DoG_ka[a,b,c+1] - DoG_ka[a,b,c-1]) / 2  
                 ]       , dtype=np.float32)
             
             if np.max(np.abs(H)) > 1e-6: 
 
                 dX = np.linalg.solve(H, -grad) 
+                            
+                if np.max(np.abs(dX)) >= 1.0:
+                    DoG_k_NMS[a,b,c] = 0
+                # print(dX)    
 
-                DoG_k[a,b,c] = DoG_k[a,b,c] + 1/2*np.dot(dX, grad)
+                DoG_k_NMS[a,b,c] = DoG_k_NMS[a,b,c] + 1/2*np.dot(dX, grad)
 
                 
-                if np.abs(DoG_k[a,b,c]) > 0.03 * np.max(np.abs(DoG_k)):
-                    DoG_k[a,b,c] = 255
+                if np.abs(DoG_k_NMS[a,b,c]) > 0.03 * np.max(np.abs(DoG_k_NMS)):
+                    DoG_k_NMS[a,b,c] = 255
                 else:
-                    DoG_k[a,b,c] = 0
+                    DoG_k_NMS[a,b,c] = 0
 
                 H_2D = np.array([[Dxx, Dxy],
                                  [Dxy, Dyy]])
-                
-                edgesupress = (np.trace(H_2D))**2/np.linalg.det(H_2D)
-                if edgesupress > 12.1:
-                    DoG_k[a,b,c] = 0
+                det = np.linalg.det(H_2D)
+                if abs(det) > 1e-5:
+                    edgesupress = (np.trace(H_2D))**2/det
+                    if edgesupress > 12.1:
+                        DoG_k_NMS[a,b,c] = 0
 
                 else: continue 
 
@@ -165,17 +180,17 @@ for k in range(lvl):
 
 
         else:
-            DoG_k[a,b,c] = 0
+            DoG_k_NMS[a,b,c] = 0
 
     
 
 
     
-    DoG.append(DoG_k)
+    DoG.append(DoG_k_NMS)
     
-# for i in range(lvl):
-#     for j in range(1,s-2):
-#         cv2.imshow(f"{i}{j}", DoG[i][j])    
+for i in range(lvl):
+    for j in range(1,s-2):
+        cv2.imshow(f"{i}{j}", DoG[i][j])    
 
 DoG_f = []
 

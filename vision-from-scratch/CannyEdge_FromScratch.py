@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 #thresholds parameters (to adapt depending on the image)
-t_max = 0.05 #treshold max
+t_max = 0.1 #treshold max
 t_min= 0.4*t_max #treshold min (40% of t_max)
 
 s_x= 1 #sigma for x
@@ -17,7 +17,7 @@ size = int(6*s_x+1)  #After size = 6*sigma + 1, contributions from further pixel
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 width = size//2 #to center the kernel around 0
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\chess.png", cv2.IMREAD_GRAYSCALE) #load image in grayscale
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebred.jpg", cv2.IMREAD_GRAYSCALE) #load image in grayscale
 
 h, w = image.shape #height and width of the image adaptative to any image size
 

@@ -1,18 +1,18 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\zebre.jpg", cv2.IMREAD_GRAYSCALE)
+
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\lea.png", cv2.IMREAD_GRAYSCALE)
 t = 1
-
+image_b = image.copy()
 def impair(size):
         if(size % 2 == 0): 
             return size +1
         else:
             return size 
-        
-       
-        
-def smooth(image, kernel): 
+           
+def smooth(image, kernel, h, w): 
 
     Sx = np.zeros_like(image, dtype=np.float32)
     for k in range(h): 
@@ -22,7 +22,6 @@ def smooth(image, kernel):
         S[:,l] =  np.convolve(Sx[:,l], kernel, mode ="same")  
     return S;          
     
-
 def NMS(D):
     #[s,x,y]
     D = np.array(D)
@@ -41,13 +40,15 @@ def NMS(D):
     D = D_c                
     return D            
 
-
-sigma_0 = 1
+sigma_0 = 0.7
 s = 5
-lvl = 2
+lvl = 3
 
+def KernGauss(sigma):
 
-def KernGauss(size, n, sigma):
+    size = int(sigma*6+1)
+    size = impair(size)
+    n = size//2
 
     kernel = np.zeros(size, dtype = np.float32)
 
@@ -56,9 +57,22 @@ def KernGauss(size, n, sigma):
         kernel[j] = np.exp(-(x**2)/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2)
 
     kernel /= kernel.sum()     
-    return kernel    
+    return kernel 
 
-sigma = sigma_0
+def KernGaussGrad(sigma):
+
+    size = int(sigma*3+1)
+    size = impair(size)
+    n = size//2
+
+    kernelG = np.zeros(size, dtype = np.float32)
+
+    for j in range(size):
+        x = j-n
+        kernelG[j] = np.exp(-(x**2)/(2*sigma**2))*x/(np.sqrt(2*np.pi)*sigma**3)
+
+    kernelG /= kernelG.sum()     
+    return kernelG    
 
 PYRAMID = []
 DoG = []
@@ -66,36 +80,24 @@ DoG = []
 for k in range(lvl):
     DoG_k = []
     DoG_k_n = []
-    image = image[::t,::t]
+    image = image_b[::t,::t]
     h, w = image.shape
+    sigma = sigma_0
 
     for i in range(s):
         # sigma = 2**(i/s)*sigma_0
-        size = int(sigma*6+1)
-        size = impair(size)
-        n = size//2
-
         sigma_opti = sigma*np.sqrt(2**(2/s)-1)
-
-        size_opti = int(sigma_opti*6+1)
-        size_opti = impair(size_opti)
-        n_opti = size_opti//2
-
-
         # KerGaus = KernGauss(size, n, sigma)
 
         if k == i == 0: 
-            KerGaus = KernGauss(size, n, sigma)
+            KerGaus = KernGauss(sigma)
         else:
-            KerGaus = KernGauss(size_opti, n_opti, sigma_opti)
-
+            KerGaus = KernGauss(sigma_opti)
 
         sigma = np.sqrt(sigma**2 + sigma_opti**2)
 
-        image = smooth(image, KerGaus)
+        image = smooth(image, KerGaus, h, w)
         PYRAMID.append(image)
-        
-
 
         if(i >= 1):
             DoG_k.append(PYRAMID[-1] - PYRAMID[-2])
@@ -120,14 +122,15 @@ for k in range(lvl):
     #     cv2.waitKey(0)
     #     cv2.destroyAllWindows()
 
-    
     for a,b,c in X:
-
+        
         sigma_s,h_s,w_s = DoG_ka.shape 
-        if 1<=a<sigma_s-1 and 1<= b < h_s-1 and 1<= c < w_s-1 :
+        if 1 <= a<sigma_s-1 and 1 <= b < h_s-1 and 1 <= c < w_s-1:
+
             Dss = DoG_ka[a+1,b,c] - 2*DoG_ka[a,b,c] + DoG_ka[a-1,b,c]
             Dxx = DoG_ka[a,b+1,c] - 2*DoG_ka[a,b,c] + DoG_ka[a,b-1,c]
             Dyy = DoG_ka[a,b,c+1] - 2*DoG_ka[a,b,c] + DoG_ka[a,b,c-1]
+
             Dsx = (DoG_ka[a+1,b+1,c] - DoG_ka[a+1,b-1,c] - DoG_ka[a-1,b+1,c] + DoG_ka[a-1,b-1,c]) / 4
             Dsy = (DoG_ka[a+1,b,c+1] - DoG_ka[a+1,b,c-1] - DoG_ka[a-1,b,c+1] + DoG_ka[a-1,b,c-1]) / 4
             Dxy = (DoG_ka[a,b+1,c+1] - DoG_ka[a,b+1,c-1] - DoG_ka[a,b-1,c+1] + DoG_ka[a,b-1,c-1]) / 4
@@ -138,17 +141,21 @@ for k in range(lvl):
                 [Dsy, Dxy, Dyy]
             ], dtype=np.float32)
 
-
-
             grad = np.array([
             (DoG_ka[a+1,b,c] - DoG_ka[a-1,b,c]) / 2,  
             (DoG_ka[a,b+1,c] - DoG_ka[a,b-1,c]) / 2,  
             (DoG_ka[a,b,c+1] - DoG_ka[a,b,c-1]) / 2  
                 ]       , dtype=np.float32)
-            
-            if np.max(np.abs(H)) > 1e-6: 
+             
+            # if np.linalg.det(H) > 1e-10: 
+            if np.max(np.abs(H)) > 1e-10:
+                try:
 
-                dX = np.linalg.solve(H, -grad) 
+                    dX = np.linalg.solve(H, -grad)
+    
+                except np.linalg.LinAlgError:
+
+                    dX = np.linalg.pinv(H) @ (-grad)
                             
                 if np.max(np.abs(dX)) >= 1.0:
                     DoG_k_NMS[a,b,c] = 0
@@ -156,65 +163,133 @@ for k in range(lvl):
 
                 DoG_k_NMS[a,b,c] = DoG_k_NMS[a,b,c] + 1/2*np.dot(dX, grad)
 
-                
-                if np.abs(DoG_k_NMS[a,b,c]) > 0.03 * np.max(np.abs(DoG_k_NMS)):
+                if np.abs(DoG_k_NMS[a,b,c]) > 0.003 * np.max(np.abs(DoG_k_NMS)):
                     DoG_k_NMS[a,b,c] = 255
                 else:
                     DoG_k_NMS[a,b,c] = 0
 
                 H_2D = np.array([[Dxx, Dxy],
                                  [Dxy, Dyy]])
-                det = np.linalg.det(H_2D)
-                if abs(det) > 1e-5:
-                    edgesupress = (np.trace(H_2D))**2/det
-                    if edgesupress > 12.1:
-                        DoG_k_NMS[a,b,c] = 0
+                
+                edgesupress = (np.trace(H_2D))**2/np.linalg.det(H_2D)
+
+                if edgesupress < 12.1:
+                    DoG_k_NMS[a,b,c] = 0
 
                 else: continue 
-
-
-
             else:    
                 continue
-
-
-
         else:
             DoG_k_NMS[a,b,c] = 0
-
     
 
 
+    KP = np.argwhere(DoG_k_NMS != 0)
+
+    for sgma,x,y in KP:
+        mirroir = np.pad(DoG_ka, 
+                pad_width=((0,0), (8,8), (8,8)), 
+                mode='reflect')
+        
+        patch = mirroir[sgma, x-8:x+8,y-8:y+8]
+
+
+        p,m=patch.shape
+        dxy = KernGaussGrad(1.5*sgma)
+
+        dx = np.zeros_like(patch, dtype=np.float32)
+        dy = np.zeros_like(patch, dtype=np.float32)
+
+        for i in range(p):
+            dx[i,:] = np.convolve(patch[i,:], dxy, mode="same")
+  
+        for j in range(m): 
+            dy[:,j] = np.convolve(patch[:,j], dxy, mode="same")
+
+
+        mag = np.sqrt(dx**2+dy**2)
+        GRAD_A = np.arctan2(dy, dx)
+        angle = np.degrees(GRAD_A)
+        angle = (angle + 360) % 360
+
+        nb_bins = 36
+        bins = np.linspace(0, 360, nb_bins + 1)
+
+        hist, a = np.histogram(angle, bins=bins, weights=mag)
+
+        # plt.figure(figsize=(6, 4))
+        # plt.bar(bins[:-1], hist, width=360/nb_bins, align='edge', edgecolor='black')
+        # plt.title("Histogramme d’orientation du gradient")
+        # plt.xlabel("Angle (degrés)")
+        # plt.ylabel("Amplitude (somme des magnitudes)")
+        # plt.show()
     
+        angle_max = np.argmax(hist)*10
+        new_angle = (angle - angle_max + 360) % 360
+        patch4x4 = np.zeros((4,4,4,4), dtype = np.float32)
+        dx4 = np.zeros((4,4,4,4), dtype = np.float32)
+        dy4 = np.zeros((4,4,4,4), dtype = np.float32)
+        ID = np.zeros((4,4,8), dtype = np.float32)
+
+
+        for i in range(4):
+            for j in range(4):
+
+                x = i*4+2
+                y = j*4+2
+
+                patch4x4[i, j] = patch[x-2:x+2, y-2:y+2]
+
+                for u in range(1,4-1):
+                     for v in range(1,4-1):
+                         dx4[i,j,u,:]= (patch4x4[i,j,u+1,:] - patch4x4[i,j,u-1,:] )/2
+                         dy4[i,j,:,v]= (patch4x4[i,j,:,v+1] - patch4x4[i,j,:,v-1] )/2
+
+                mag4x4 = np.sqrt(dx4**2+dy4**2)
+                angle4x4 = np.arctan2(dy4,dx4)
+                angle4 = (360 + np.degrees(angle4x4))%360
+                b = np.linspace(0, 360, 9)
+                h4x4, a4x4 = np.histogram(angle4,bins=b,weights=mag4x4)
+
+                ID[i,j] = h4x4
+
+
+                # plt.figure(figsize=(6, 4))
+                # plt.bar(b[:-1], h4x4, width=360/8, align='edge', edgecolor='black')
+                # plt.title("Histogramme d’orientation du gradient")
+                # plt.xlabel("Angle (degrés)")
+                # plt.ylabel("Amplitude (somme des magnitudes)")
+                # plt.show()
+
+
+
+        # dx4[:,:,1:-1,:]= (patch4x4[:,:,2:,:] - patch4x4[:,:,:-2,:] )/2   
+        # dy4[:,:,:,1:-1]= (patch4x4[:,:,:,2:] - patch4x4[:,:,:,:-2] )/2   
+        
+
     DoG.append(DoG_k_NMS)
-    
-for i in range(lvl):
-    for j in range(1,s-2):
-        cv2.imshow(f"{i}{j}", DoG[i][j])    
+
+
+# for i in range(lvl):
+#     for j in range(len(DoG[i])):
+#         cv2.imshow(f"{i}{j}", DoG[i][j])    
 
 DoG_f = []
 
 for i in range(lvl):
     tot = DoG[i][0]
-    for j in range(1, s-1):
-
+    for j in range(1, len(DoG[i])):
         tot += DoG[i][j]
-
     DoG_f.append(tot)
 
 for i in range(lvl):
     cv2.imshow(f"Octave {i+1}", DoG_f[i].astype(np.uint8))
+    
+#     nb_keypoints_tot = np.sum(DoG_f[i] > 0)
+#     print(f"Octave {i+1} total: {nb_keypoints_tot} keypoints uniques")
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-
-
-
-
-  
-
-
 
 # pour implémenter en application une bonne image pyramid avec un dog :µ
 

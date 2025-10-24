@@ -5,10 +5,10 @@ k=3 #size of our patches
 alpha = 0.04 #R coefficient (usually 0.04 to 0.06)
 
 s = 1 #our second smoothing (not the sobel's one) sigma (1 because our patches is also small)
-size = 2*s+1 #function I found on internet correling the sigma's value to his size (in a discrete signal it's useless to let the kernel have infinite size because after a certain value he's very close to 0 so it's useless calculations)
+size = 6*s+1 #function I found on internet correling the sigma's value to his size (in a discrete signal it's useless to let the kernel have infinite size because after a certain value he's very close to 0 so it's useless calculations)
 width = size//2 #defining the center of the kernel
 
-image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\images.jpeg", cv2.IMREAD_GRAYSCALE) #get image with cv2 functions 
+image = cv2.imread("C:\\Users\\sacha\\OneDrive\\Documents\\Projet\\computer-vision-playground\\vision-from-scratch\\image_eg\\lea.png", cv2.IMREAD_GRAYSCALE) #get image with cv2 functions 
 h, w = image.shape #get shape image
 
 dxy = np.array([1,0,-1], np.float32) /2 #sobel matrix but separated in 2 vectors to theorically reduce the complexity from 2K^2WH

@@ -36,7 +36,7 @@ def impair(size):
 # image = cv2.resize(image, (w, h))
 # my intuitive way of subsampling theoricaly work but add more complexity (calculate the average pixel value with his surroundings for each pixel) but has less risk of losing patern (aliasing)
 
-s = 3
+s = 2
 size = int(6*s+1)
 size = impair(size)
 width = size//2

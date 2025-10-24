@@ -9,3 +9,8 @@ vision-from-scratch/image_eg/images.jpg
 vision-from-scratch/image_eg/images.png
 vision-from-scratch/image_eg/vwv.jpg
 vision-from-scratch/chat.py
+vision-from-scratch/image_eg/lea.png
+vision-from-scratch/image_eg/fusee.jpg
+vision-from-scratch/image_eg/taj.png
+.gitignore
+vision-from-scratch/image_eg/taj.png

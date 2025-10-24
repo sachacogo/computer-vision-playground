@@ -252,6 +252,7 @@ for k in range(lvl):
                 h4x4, a4x4 = np.histogram(angle4,bins=b,weights=mag4x4)
 
                 ID[i,j] = h4x4
+        ID/=ID.sum()        
 
 
                 # plt.figure(figsize=(6, 4))
